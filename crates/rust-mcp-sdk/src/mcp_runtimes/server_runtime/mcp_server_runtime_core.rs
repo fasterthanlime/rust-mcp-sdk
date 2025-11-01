@@ -8,7 +8,7 @@ use crate::schema::schema_utils::{
 };
 use crate::schema::{
     schema_utils::{ClientMessages, ServerMessages},
-    ClientRequest, InitializeResult, RpcError,
+    ClientRequest, InitializeResult, RequestId, RpcError,
 };
 use async_trait::async_trait;
 use rust_mcp_transport::TransportDispatcher;
@@ -65,6 +65,7 @@ impl McpServerHandler for RuntimeCoreInternalHandler<Box<dyn ServerHandlerCore>>
     async fn handle_request(
         &self,
         client_jsonrpc_request: RequestFromClient,
+        _request_id: RequestId,
         runtime: Arc<dyn McpServer>,
     ) -> std::result::Result<ResultFromServer, RpcError> {
         // store the client details if the request is a client initialization request

@@ -308,9 +308,10 @@ impl ServerRuntime {
         let response = match message {
             // Handle a client request
             ClientMessage::Request(client_jsonrpc_request) => {
+                let request_id = client_jsonrpc_request.id.clone();
                 let result = self
                     .handler
-                    .handle_request(client_jsonrpc_request.request, self.clone())
+                    .handle_request(client_jsonrpc_request.request, request_id, self.clone())
                     .await;
                 // create a response to send back to the client
                 let response: MessageFromServer = match result {

@@ -7,7 +7,7 @@ use crate::schema::{
         self, CallToolError, ClientMessage, ClientMessages, MessageFromServer,
         NotificationFromClient, RequestFromClient, ResultFromServer, ServerMessage, ServerMessages,
     },
-    CallToolResult, ClientNotification, ClientRequest, InitializeResult, RpcError,
+    CallToolResult, ClientNotification, ClientRequest, InitializeResult, RequestId, RpcError,
 };
 use async_trait::async_trait;
 
@@ -83,6 +83,7 @@ impl McpServerHandler for ServerRuntimeInternalHandler<Box<dyn ServerHandler>> {
     async fn handle_request(
         &self,
         client_jsonrpc_request: RequestFromClient,
+        request_id: RequestId,
         runtime: Arc<dyn McpServer>,
     ) -> std::result::Result<ResultFromServer, RpcError> {
         match client_jsonrpc_request {
@@ -147,7 +148,7 @@ impl McpServerHandler for ServerRuntimeInternalHandler<Box<dyn ServerHandler>> {
                     ClientRequest::CallToolRequest(call_tool_request) => {
                         let result = self
                             .handler
-                            .handle_call_tool_request(call_tool_request, runtime)
+                            .handle_call_tool_request(call_tool_request, request_id, runtime)
                             .await;
 
                         Ok(result.map_or_else(

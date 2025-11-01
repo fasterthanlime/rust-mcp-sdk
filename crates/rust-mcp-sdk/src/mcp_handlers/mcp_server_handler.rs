@@ -210,6 +210,7 @@ pub trait ServerHandler: Send + Sync + 'static {
     async fn handle_call_tool_request(
         &self,
         request: CallToolRequest,
+        request_id: RequestId,
         runtime: Arc<dyn McpServer>,
     ) -> std::result::Result<CallToolResult, CallToolError> {
         runtime
