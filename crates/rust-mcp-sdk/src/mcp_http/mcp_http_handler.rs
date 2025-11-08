@@ -343,7 +343,7 @@ impl McpHttpHandler {
             }
             None => match valid_initialize_method(payload) {
                 Ok(_) => {
-                    return start_new_session(state, payload, auth_info).await;
+                    return start_new_session(state, payload, auth_info, headers).await;
                 }
                 Err(McpSdkError::SdkError(error)) => error_response(StatusCode::BAD_REQUEST, error),
                 Err(error) => {

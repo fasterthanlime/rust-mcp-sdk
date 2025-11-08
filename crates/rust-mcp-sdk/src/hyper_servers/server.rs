@@ -27,12 +27,13 @@ use axum_server::tls_rustls::RustlsConfig;
 use axum_server::Handle;
 use rust_mcp_transport::{event_store::EventStore, SessionId, TransportOptions};
 use std::{
+    collections::HashMap,
     net::{SocketAddr, ToSocketAddrs},
     path::Path,
     sync::Arc,
     time::Duration,
 };
-use tokio::signal;
+use tokio::{signal, sync::RwLock};
 
 // Default client ping interval (12 seconds)
 const DEFAULT_CLIENT_PING_INTERVAL: Duration = Duration::from_secs(12);
@@ -286,6 +287,7 @@ impl HyperServer {
             transport_options: Arc::clone(&server_options.transport_options),
             enable_json_response: server_options.enable_json_response.unwrap_or(false),
             event_store: server_options.event_store.as_ref().map(Arc::clone),
+            session_metadata: Arc::new(RwLock::new(HashMap::new())),
         });
 
         // populate middlewares

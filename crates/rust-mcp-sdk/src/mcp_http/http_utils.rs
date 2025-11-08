@@ -23,6 +23,7 @@ use rust_mcp_transport::{
     MCP_PROTOCOL_VERSION_HEADER, MCP_SESSION_ID_HEADER,
 };
 use serde_json::{Map, Value};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::io::{duplex, AsyncBufReadExt, BufReader};
 use tokio_stream::StreamExt;
@@ -374,6 +375,7 @@ pub(crate) async fn start_new_session(
     state: Arc<McpAppState>,
     payload: &str,
     auth_info: Option<AuthInfo>,
+    headers: &HeaderMap,
 ) -> TransportServerResult<http::Response<GenericBody>> {
     let session_id: SessionId = state.id_generator.generate();
 
@@ -403,6 +405,24 @@ pub(crate) async fn start_new_session(
             .session_store
             .set(session_id.to_owned(), runtime.clone())
             .await;
+
+        // Extract and store X-Thread-ID if present
+        if let Some(thread_id) = headers
+            .get(rust_mcp_transport::X_THREAD_ID_HEADER)
+            .and_then(|v| v.to_str().ok())
+        {
+            let mut metadata = HashMap::new();
+            metadata.insert(
+                rust_mcp_transport::X_THREAD_ID_HEADER.to_string(),
+                thread_id.to_string(),
+            );
+            state
+                .session_metadata
+                .write()
+                .await
+                .insert(session_id.clone(), metadata);
+            tracing::debug!("Stored X-Thread-ID '{}' for session {}", thread_id, &session_id);
+        }
     }
     response
 }
@@ -600,6 +620,8 @@ pub(crate) async fn delete_session(
         Some(runtime) => {
             runtime.shutdown().await;
             state.session_store.delete(&session_id).await;
+            // Clean up session metadata
+            state.session_metadata.write().await.remove(&session_id);
             tracing::info!("client disconnected : {}", &session_id);
 
             let body = Full::new(Bytes::from("ok"))

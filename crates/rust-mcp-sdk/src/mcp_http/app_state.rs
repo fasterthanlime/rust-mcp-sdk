@@ -28,3 +28,36 @@ pub struct McpAppState {
     /// Maps session_id -> (header_name -> header_value)
     pub session_metadata: Arc<RwLock<HashMap<SessionId, HashMap<String, String>>>>,
 }
+
+impl McpAppState {
+    /// Retrieves a specific header value from session metadata
+    ///
+    /// # Arguments
+    /// * `session_id` - The session identifier
+    /// * `header_name` - The name of the header to retrieve (e.g., "X-Thread-ID")
+    ///
+    /// # Returns
+    /// * `Option<String>` - The header value if it exists, None otherwise
+    pub async fn get_session_header(&self, session_id: &SessionId, header_name: &str) -> Option<String> {
+        self.session_metadata
+            .read()
+            .await
+            .get(session_id)
+            .and_then(|headers| headers.get(header_name).cloned())
+    }
+
+    /// Retrieves all metadata for a given session
+    ///
+    /// # Arguments
+    /// * `session_id` - The session identifier
+    ///
+    /// # Returns
+    /// * `Option<HashMap<String, String>>` - All metadata for the session if it exists
+    pub async fn get_session_metadata(&self, session_id: &SessionId) -> Option<HashMap<String, String>> {
+        self.session_metadata
+            .read()
+            .await
+            .get(session_id)
+            .cloned()
+    }
+}
