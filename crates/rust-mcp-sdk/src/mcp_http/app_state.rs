@@ -3,7 +3,9 @@ use crate::session_store::SessionStore;
 use crate::{id_generator::FastIdGenerator, mcp_traits::IdGenerator, schema::InitializeResult};
 use rust_mcp_transport::event_store::EventStore;
 use rust_mcp_transport::{SessionId, TransportOptions};
+use std::collections::HashMap;
 use std::{sync::Arc, time::Duration};
+use tokio::sync::RwLock;
 
 /// Application state struct for the Hyper ser
 ///
@@ -22,4 +24,7 @@ pub struct McpAppState {
     /// Event store for resumability support
     /// If provided, resumability will be enabled, allowing clients to reconnect and resume messages
     pub event_store: Option<Arc<dyn EventStore>>,
+    /// Session metadata for storing custom headers and context (like X-Thread-ID)
+    /// Maps session_id -> (header_name -> header_value)
+    pub session_metadata: Arc<RwLock<HashMap<SessionId, HashMap<String, String>>>>,
 }
