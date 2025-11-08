@@ -379,13 +379,28 @@ pub(crate) async fn start_new_session(
 ) -> TransportServerResult<http::Response<GenericBody>> {
     let session_id: SessionId = state.id_generator.generate();
 
+    // Extract and prepare session metadata (normalize keys to lowercase)
+    let session_metadata = headers
+        .get(rust_mcp_transport::X_THREAD_ID_HEADER)
+        .and_then(|v| v.to_str().ok())
+        .map(|thread_id| {
+            let mut metadata = HashMap::new();
+            metadata.insert(
+                rust_mcp_transport::X_THREAD_ID_HEADER.to_lowercase(),
+                thread_id.to_string(),
+            );
+            tracing::debug!("Prepared X-Thread-ID '{}' for session {}", thread_id, &session_id);
+            metadata
+        });
+
     let h: Arc<dyn McpServerHandler> = state.handler.clone();
-    // create a new server instance with unique session_id and
+    // create a new server instance with unique session_id and metadata
     let runtime: Arc<ServerRuntime> = server_runtime::create_server_instance(
         Arc::clone(&state.server_details),
         h,
         session_id.to_owned(),
         auth_info,
+        session_metadata.clone(),
     );
 
     tracing::info!("a new client joined : {}", &session_id);
@@ -406,22 +421,13 @@ pub(crate) async fn start_new_session(
             .set(session_id.to_owned(), runtime.clone())
             .await;
 
-        // Extract and store X-Thread-ID if present
-        if let Some(thread_id) = headers
-            .get(rust_mcp_transport::X_THREAD_ID_HEADER)
-            .and_then(|v| v.to_str().ok())
-        {
-            let mut metadata = HashMap::new();
-            metadata.insert(
-                rust_mcp_transport::X_THREAD_ID_HEADER.to_string(),
-                thread_id.to_string(),
-            );
+        // Store session metadata in the global store (for backwards compatibility)
+        if let Some(metadata) = session_metadata {
             state
                 .session_metadata
                 .write()
                 .await
                 .insert(session_id.clone(), metadata);
-            tracing::debug!("Stored X-Thread-ID '{}' for session {}", thread_id, &session_id);
         }
     }
     response
@@ -763,12 +769,13 @@ pub(crate) async fn handle_sse_connection(
     };
 
     let h: Arc<dyn McpServerHandler> = state.handler.clone();
-    // create a new server instance with unique session_id and
+    // create a new server instance with unique session_id (no metadata for SSE connections)
     let server: Arc<ServerRuntime> = server_runtime::create_server_instance(
         Arc::clone(&state.server_details),
         h,
         session_id.to_owned(),
         auth_info,
+        None, // No session metadata for SSE connections
     );
 
     state

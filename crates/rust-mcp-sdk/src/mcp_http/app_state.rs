@@ -35,15 +35,17 @@ impl McpAppState {
     /// # Arguments
     /// * `session_id` - The session identifier
     /// * `header_name` - The name of the header to retrieve (e.g., "X-Thread-ID")
+    ///                   Note: Header names are case-insensitive and will be normalized to lowercase
     ///
     /// # Returns
     /// * `Option<String>` - The header value if it exists, None otherwise
     pub async fn get_session_header(&self, session_id: &SessionId, header_name: &str) -> Option<String> {
+        let normalized_key = header_name.to_lowercase();
         self.session_metadata
             .read()
             .await
             .get(session_id)
-            .and_then(|headers| headers.get(header_name).cloned())
+            .and_then(|headers| headers.get(&normalized_key).cloned())
     }
 
     /// Retrieves all metadata for a given session

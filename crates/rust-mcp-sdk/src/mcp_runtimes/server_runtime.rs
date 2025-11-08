@@ -46,6 +46,8 @@ pub struct ServerRuntime {
     server_details: Arc<InitializeResult>,
     #[cfg(feature = "hyper-server")]
     session_id: Option<SessionId>,
+    #[cfg(feature = "hyper-server")]
+    session_metadata: Option<HashMap<String, String>>,
     transport_map: tokio::sync::RwLock<HashMap<String, TransportType>>, //TODO: remove the transport_map, we do not need a hashmap for it
     request_id_gen: Box<dyn RequestIdGen>,
     client_details_tx: watch::Sender<Option<InitializeRequestParams>>,
@@ -271,6 +273,11 @@ impl McpServer for ServerRuntime {
     #[cfg(feature = "hyper-server")]
     fn session_id(&self) -> Option<SessionId> {
         self.session_id.to_owned()
+    }
+
+    #[cfg(feature = "hyper-server")]
+    async fn get_session_metadata(&self) -> Option<HashMap<String, String>> {
+        self.session_metadata.clone()
     }
 }
 
@@ -573,6 +580,7 @@ impl ServerRuntime {
         handler: Arc<dyn McpServerHandler>,
         session_id: SessionId,
         auth_info: Option<AuthInfo>,
+        session_metadata: Option<HashMap<String, String>>,
     ) -> Arc<Self> {
         use tokio::sync::RwLock;
 
@@ -582,6 +590,7 @@ impl ServerRuntime {
             server_details,
             handler,
             session_id: Some(session_id),
+            session_metadata,
             transport_map: tokio::sync::RwLock::new(HashMap::new()),
             client_details_tx,
             client_details_rx,
@@ -610,6 +619,8 @@ impl ServerRuntime {
             handler,
             #[cfg(feature = "hyper-server")]
             session_id: None,
+            #[cfg(feature = "hyper-server")]
+            session_metadata: None,
             transport_map: tokio::sync::RwLock::new(map),
             client_details_tx,
             client_details_rx,

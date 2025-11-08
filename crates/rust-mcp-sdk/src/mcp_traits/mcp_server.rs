@@ -19,7 +19,7 @@ use crate::schema::{
 };
 use async_trait::async_trait;
 use rust_mcp_transport::SessionId;
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 use tokio::sync::RwLockReadGuard;
 
 //TODO: support options , such as enforceStrictCapabilities
@@ -432,4 +432,11 @@ pub trait McpServer: Sync + Send {
 
     #[cfg(feature = "hyper-server")]
     fn session_id(&self) -> Option<SessionId>;
+
+    /// Retrieves all metadata for the current session (HTTP headers like X-Thread-ID)
+    ///
+    /// # Returns
+    /// * `Option<HashMap<String, String>>` - All metadata for the session if it exists
+    #[cfg(feature = "hyper-server")]
+    async fn get_session_metadata(&self) -> Option<HashMap<String, String>>;
 }

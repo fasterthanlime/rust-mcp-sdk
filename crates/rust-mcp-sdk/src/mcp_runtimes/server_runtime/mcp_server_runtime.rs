@@ -65,8 +65,9 @@ pub(crate) fn create_server_instance(
     handler: Arc<dyn McpServerHandler>,
     session_id: SessionId,
     auth_info: Option<AuthInfo>,
+    session_metadata: Option<std::collections::HashMap<String, String>>,
 ) -> Arc<ServerRuntime> {
-    ServerRuntime::new_instance(server_details, handler, session_id, auth_info)
+    ServerRuntime::new_instance(server_details, handler, session_id, auth_info, session_metadata)
 }
 
 pub(crate) struct ServerRuntimeInternalHandler<H> {
