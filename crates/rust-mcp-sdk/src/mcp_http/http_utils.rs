@@ -380,18 +380,17 @@ pub(crate) async fn start_new_session(
     let session_id: SessionId = state.id_generator.generate();
 
     // Extract and prepare session metadata (normalize keys to lowercase)
-    let session_metadata = headers
+    let mut session_metadata = HashMap::new();
+    if let Some(thread_id) = headers
         .get(rust_mcp_transport::X_THREAD_ID_HEADER)
         .and_then(|v| v.to_str().ok())
-        .map(|thread_id| {
-            let mut metadata = HashMap::new();
-            metadata.insert(
-                rust_mcp_transport::X_THREAD_ID_HEADER.to_lowercase(),
-                thread_id.to_string(),
-            );
-            tracing::debug!("Prepared X-Thread-ID '{}' for session {}", thread_id, &session_id);
-            metadata
-        });
+    {
+        session_metadata.insert(
+            rust_mcp_transport::X_THREAD_ID_HEADER.to_lowercase(),
+            thread_id.to_string(),
+        );
+        tracing::debug!("Prepared X-Thread-ID '{}' for session {}", thread_id, &session_id);
+    }
 
     let h: Arc<dyn McpServerHandler> = state.handler.clone();
     // create a new server instance with unique session_id and metadata
@@ -420,15 +419,6 @@ pub(crate) async fn start_new_session(
             .session_store
             .set(session_id.to_owned(), runtime.clone())
             .await;
-
-        // Store session metadata in the global store (for backwards compatibility)
-        if let Some(metadata) = session_metadata {
-            state
-                .session_metadata
-                .write()
-                .await
-                .insert(session_id.clone(), metadata);
-        }
     }
     response
 }
@@ -626,8 +616,6 @@ pub(crate) async fn delete_session(
         Some(runtime) => {
             runtime.shutdown().await;
             state.session_store.delete(&session_id).await;
-            // Clean up session metadata
-            state.session_metadata.write().await.remove(&session_id);
             tracing::info!("client disconnected : {}", &session_id);
 
             let body = Full::new(Bytes::from("ok"))
@@ -775,7 +763,7 @@ pub(crate) async fn handle_sse_connection(
         h,
         session_id.to_owned(),
         auth_info,
-        None, // No session metadata for SSE connections
+        HashMap::new(), // No session metadata for SSE connections
     );
 
     state

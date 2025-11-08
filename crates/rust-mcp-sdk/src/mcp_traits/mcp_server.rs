@@ -436,7 +436,7 @@ pub trait McpServer: Sync + Send {
     /// Retrieves all metadata for the current session (HTTP headers like X-Thread-ID)
     ///
     /// # Returns
-    /// * `Option<HashMap<String, String>>` - All metadata for the session if it exists
+    /// * `&HashMap<String, String>` - Session metadata (empty if no metadata available)
     #[cfg(feature = "hyper-server")]
-    async fn get_session_metadata(&self) -> Option<HashMap<String, String>>;
+    fn get_session_metadata(&self) -> &HashMap<String, String>;
 }
