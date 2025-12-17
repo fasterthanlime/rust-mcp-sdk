@@ -4,7 +4,7 @@ use rust_mcp_sdk::macros::{mcp_tool, JsonSchema};
 use rust_mcp_sdk::schema::TextContent;
 use rust_mcp_sdk::schema::{
     schema_utils::CallToolError, CallToolRequest, CallToolResult, ListToolsRequest,
-    ListToolsResult, RpcError,
+    ListToolsResult, RequestId, RpcError,
 };
 use rust_mcp_sdk::{mcp_server::ServerHandler, McpServer};
 use std::sync::Arc;
@@ -56,6 +56,7 @@ impl ServerHandler for McpServerHandler {
     async fn handle_call_tool_request(
         &self,
         request: CallToolRequest,
+        _request_id: RequestId,
         runtime: Arc<dyn McpServer>,
     ) -> std::result::Result<CallToolResult, CallToolError> {
         if request.params.name.eq(&ShowAuthInfo::tool_name()) {
